@@ -7,8 +7,9 @@
 struct predictor
 {
   uint32_t entries;
-  int *btb;
   uint8_t recent2;
+  bool *btb;
+  uint32_t *tag;
 };
 
 typedef struct predictor predictor;
