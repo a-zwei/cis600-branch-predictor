@@ -35,6 +35,7 @@ predictor make_predictor(uint32_t entries)
 void free_predictor(predictor p)
 {
   free(p.btb);
+  free(p.tag);
 }
 
 size_t btb_index(predictor p, uint32_t addr)
