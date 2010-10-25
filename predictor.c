@@ -86,6 +86,8 @@ branch *find_or_add_history_node(predictor *p, uint32_t addr)
     if(cur->next == NULL) {
       cur->next = malloc(sizeof(branch));
       cur->next->addr = addr;
+      cur->next->occurrences = 0;
+      cur->next->correct = 0;
       cur->next->next = NULL;
     }
     cur = cur->next;
