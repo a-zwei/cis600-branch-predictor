@@ -4,17 +4,10 @@
 
 #include "predictor.h"
 
-void initialize_btb(bool *btb, size_t size)
+void initialize_btb(entry *btb, size_t size)
 {
   for(int i = 0; i < size; i++) {
-    btb[i] = true;
-  }
-}
-
-void initialize_tag(uint32_t *tag, size_t size)
-{
-  for(int i = 0; i < size; i++) {
-    tag[i] = 0;
+    btb[i] = (entry) {0, 0};
   }
 }
 
@@ -30,11 +23,9 @@ predictor make_predictor(uint32_t entries)
 
   result.entries = entries;
   result.recent = 0;
-  result.btb = malloc(4 * entries * sizeof(bool));
-  result.tag = malloc(4 * entries * sizeof(uint32_t));
+  result.btb = malloc(entries * sizeof(entry));
 
-  initialize_btb(result.btb, 4 * entries);
-  initialize_tag(result.tag, 4 * entries);
+  initialize_btb(result.btb, entries);
   initialize_stats(&result.stats);
 
   return result;
@@ -53,23 +44,22 @@ void free_history(branch *b)
 void free_predictor(predictor p)
 {
   free(p.btb);
-  free(p.tag);
   free_history(p.stats.history);
 }
 
 size_t btb_index(predictor p, uint32_t addr)
 {
-  return (addr % p.entries << 2) | (p.recent & 4);
+  return (addr % (p.entries / 4) << 2) | p.recent;
 }
 
 bool hit(predictor p, uint32_t addr)
 {
-  return p.tag[btb_index(p, addr)] == addr;
+  return p.btb[btb_index(p, addr)].address == addr;
 }
 
-bool predict(predictor p, uint32_t addr)
+uint32_t predict(predictor p, uint32_t addr)
 {
-  return p.btb[btb_index(p, addr)];
+  return hit(p, addr) ? p.btb[btb_index(p, addr)].target : 0;
 }
 
 branch *find_or_add_history_node(predictor *p, uint32_t addr)
@@ -85,10 +75,7 @@ branch *find_or_add_history_node(predictor *p, uint32_t addr)
 
     if(cur->next == NULL) {
       cur->next = malloc(sizeof(branch));
-      cur->next->addr = addr;
-      cur->next->occurrences = 0;
-      cur->next->correct = 0;
-      cur->next->next = NULL;
+      *(cur->next) = (branch) {addr, 0, 0, NULL};
     }
     cur = cur->next;
   }
@@ -127,18 +114,28 @@ branch most_significant_branch(predictor p)
   return result;
 }
 
+void erase(predictor p, uint32_t addr)
+{
+  p.btb[btb_index(p, addr)] = (entry) {0, 0};
+}
+
 void record_branch(predictor *p, uint32_t addr, uint32_t target, bool taken)
 {
+  uint32_t prediction = predict(*p, addr);
+  bool correct = taken ? prediction == target : prediction == 0;
+
   // record stats
   p->stats.branches++;
   if(hit(*p, addr)) p->stats.hits++;
-  bool correct = predict(*p, addr) == taken;
   if(!correct) p->stats.mispredictions++;
   add_history(p, addr, correct);
 
   // update the predictor
-  p->btb[btb_index(*p, addr)] = taken;
-  p->tag[btb_index(*p, addr)] = addr;
+  if(taken) {
+    p->btb[btb_index(*p, addr)] = (entry) {addr, target};
+  } else {
+    if(hit(*p, addr)) erase(*p, addr);
+  }
   p->recent <<= 1;
-  p->recent &= taken;
+  p->recent |= taken;
 }

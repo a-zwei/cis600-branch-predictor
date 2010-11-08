@@ -26,7 +26,6 @@ int main(int argc, char **argv)
   }
   free(line);
 
-  printf("Note: I initialized the BTB to predict all branches taken.\n\n");
   printf("(a) Number of hits: %d. Total branches: %d. Hit rate: %.1f%%.\n",
       p.stats.hits, p.stats.branches, (float)p.stats.hits/p.stats.branches*100);
   printf("(b) Incorrect predictions: %d of %d, or %.1f%%.\n",
@@ -34,10 +33,10 @@ int main(int argc, char **argv)
       (float)p.stats.mispredictions/p.stats.branches*100);
 
   branch msb = most_significant_branch(p);
-  printf("(c) Most significant branch (%0x) seen %d times of %d, or %.1f%%\n",
+  printf("(c) Most significant branch (0x%x) seen %d times of %d, or %.1f%%\n",
       msb.addr, msb.occurrences, p.stats.branches,
       (float)msb.occurrences/p.stats.branches*100);     
-  printf("    Correct predictions: %d of %d, or %.1f%%\n", msb.correct,
+  printf("    Correct predictions: %d of %d, or %.1f%%.\n", msb.correct,
       p.stats.branches - p.stats.mispredictions,
       (float)msb.correct/(p.stats.branches - p.stats.mispredictions)*100);
   printf("(d) Unique branches: %d\n    Misses reported: %d\n"

@@ -23,12 +23,17 @@ struct stats
 };
 typedef struct stats stats;
 
+struct entry
+{
+  uint32_t address, target;
+};
+typedef struct entry entry;
+
 struct predictor
 {
   uint32_t entries;
-  unsigned int recent : 2; // 2 bits of branch state
-  bool *btb;
-  uint32_t *tag; // address, to determine hit or miss
+  unsigned int recent : 2; // 2 bits of recent branch state
+  entry *btb;
   stats stats;
 };
 typedef struct predictor predictor;
